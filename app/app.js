@@ -3,6 +3,7 @@ const express = require('express');
 const mysql = require('mysql2');
 
 const app = express();
+app.set('view engine', 'ejs');
 
 // Database connection settings for Node 1 (Central Node)
 const centralNodeConnection = mysql.createConnection({
@@ -27,18 +28,15 @@ const node3Connection = mysql.createConnection({
   password: '12345',
   database: 'node3_database',
 });
-
-// Define the routes for the web application
-
 // Route for getting all movies from the central node
 app.get('/movies', (req, res) => {
-  centralNodeConnection.query('SELECT * FROM movies', (error, results) => {
+  centralNodeConnection.query('SELECT * FROM movies_test_2', (error, results) => {
     if (error) {
       console.error(error);
       return res.status(500).send('Error retrieving movies from database');
     }
 
-    res.json(results);
+    res.render('results', { movies: results });
   });
 });
 
