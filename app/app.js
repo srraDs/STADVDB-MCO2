@@ -30,7 +30,7 @@ const node3Connection = mysql.createConnection({
 });
 // Route for getting all movies from the central node
 app.get('/movies', (req, res) => {
-  centralNodeConnection.query('SELECT * FROM movies_test_2', (error, results) => {
+  centralNodeConnection.query('SELECT name, year FROM movies_test_2', (error, results) => {
     if (error) {
       console.error(error);
       return res.status(500).send('Error retrieving movies from database');
@@ -39,6 +39,7 @@ app.get('/movies', (req, res) => {
     res.render('results', { movies: results });
   });
 });
+
 
 // Route for simulating transactions
 app.post('/transactions', (req, res) => {
