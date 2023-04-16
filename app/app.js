@@ -1,7 +1,5 @@
 const express = require('express');
-
 const mysql = require('mysql2');
-
 const app = express();
 app.set('view engine', 'ejs');
 
@@ -32,186 +30,30 @@ const node3Connection = mysql.createConnection({
 
 // Route for getting all movies from the central node
 app.get('/movies', (req, res) => {
-  centralNodeConnection.query('SELECT name, year FROM movies_test_2 LIMIT 10', (error, results) => {
+  centralNodeConnection.query('SELECT name, year FROM movies_test_2 LIMIT 5', (error, results) => {
     if (error) {
       console.error(error);
       return res.status(500).send('Error retrieving movies from database');
     }
-
     res.render('results', { movies: results });
   } );
 });
 
-
-// Route for simulating transactions
-app.post('/transactions', (req, res) => {
-  // Route for simulating transactions in Case #1
-app.post('/transactions/case1', (req, res) => {
-  // Start a transaction block for Node 1
-  centralNodeConnection.beginTransaction((err) => {
-    if (err) { 
-      console.error(err);
-      return res.status(500).send('Error starting transaction');
-    }
-    
-    // Query the same data item from Node 1 and Node 2
-    centralNodeConnection.query('SELECT * FROM movies WHERE year = 1990', (error, results1) => {
+// Route for updating a movie
+app.put('/movies/93', (req, res) => {
+  const movieId = 93;
+  centralNodeConnection.query(
+    'UPDATE movies_test_2 SET name = "courier" WHERE id = ?',
+    [movieId],
+    (error, results, fields) => {
       if (error) {
         console.error(error);
-        return centralNodeConnection.rollback(() => {
-          res.status(500).send('Error querying data from Node 1');
-        });
+        return res.status(500).send('Error updating movie in database');
       }
-      
-      node2Connection.query('SELECT * FROM movies WHERE year = 1990', (error, results2) => {
-        if (error) {
-          console.error(error);
-          return centralNodeConnection.rollback(() => {
-            res.status(500).send('Error querying data from Node 2');
-          });
-        }
-        
-        // Merge the results and send back to the client
-        const mergedResults = [...results1, ...results2];
-        res.json(mergedResults);
-        
-        // Commit the transaction block for Node 1
-        centralNodeConnection.commit((error) => {
-          if (error) {
-            console.error(error);
-            return centralNodeConnection.rollback(() => {
-              res.status(500).send('Error committing transaction');
-            });
-          }
-          
-          console.log('Transaction committed successfully');
-        });
-      });
-    });
-  });
-});
-
-});
-
-// Route for adding a new movie
-app.post('/movies/add', (req, res) => {
-  const { name, year } = req.body;
-
-  // Insert the new movie into the central node database
-  centralNodeConnection.query('INSERT INTO movies_test_2 (name, year) VALUES (?, ?)', [name, year], (error, results) => {
-    if (error) {
-      console.error(error);
-      return res.status(500).send('Error adding movie to database');
+      console.log(`Updated movie with id ${movieId} to name courier`);
+      res.send(`Updated movie with id ${movieId} to name courier`);
     }
-
-    res.redirect('/movies');
-  });
-});
-
-// Route for editing a movie
-app.post('/movies/edit/:id', (req, res) => {
-  const { id } = req.params;
-  const { name, year } = req.body;
-
-  // Update the movie with the given ID in the central node database
-  centralNodeConnection.query('UPDATE movies_test_2 SET name = ?, year = ? WHERE id = ?', [name, year, id], (error, results) => {
-    if (error) {
-      console.error(error);
-      return res.status(500).send('Error updating movie in database');
-    }
-
-    res.redirect('/movies');
-  });
-});
-
-// Route for deleting a movie
-app.post('/movies/delete/:id', (req, res) => {
-  const id = req.params.id;
-
-  // Check if the movie exists in the database
-  centralNodeConnection.query('SELECT * FROM movies_test_2 WHERE id = ?', [id], (error, results) => {
-    if (error) {
-      console.error(error);
-      return res.status(500).send('Error retrieving movie from database');
-    }
-
-    // If the movie does not exist, return an error response
-    if (results.length === 0) {
-      return res.status(404).send('Movie not found');
-    }
-
-    // Delete the movie from the database
-    centralNodeConnection.query('DELETE FROM movies_test_2 WHERE id = ?', [id], (error, results) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).send('Error deleting movie from database');
-      }
-
-      // Redirect to the /movies route to display the updated movie list
-      res.redirect('/movies');
-    });
-  });
-});
-
-
-
-// Route for setting isolation level
-app.post('/isolation-level', (req, res) => {
-app.post('/transactions/case1', (req, res) => {
-  // Start a transaction block for Node 1 with read committed isolation level
-  centralNodeConnection.beginTransaction((err) => {
-    if (err) { 
-      console.error(err);
-      return res.status(500).send('Error starting transaction');
-    }
-    
-    // Set read committed isolation level for Node 1
-    centralNodeConnection.query('SET TRANSACTION ISOLATION LEVEL READ COMMITTED', (error) => {
-      if (error) {
-        console.error(error);
-        return centralNodeConnection.rollback(() => {
-          res.status(500).send('Error setting isolation level');
-        });
-      }
-      
-      // Query the same data item from Node 1 and Node 2
-      centralNodeConnection.query('SELECT * FROM movies WHERE year = 1970', (error, results1) => {
-        if (error) {
-          console.error(error);
-          return centralNodeConnection.rollback(() => {
-            res.status(500).send('Error querying data from Node 1');
-          });
-        }
-        
-        node2Connection.query('SELECT * FROM movies WHERE year = 1970', (error, results2) => {
-          if (error) {
-            console.error(error);
-            return centralNodeConnection.rollback(() => {
-              res.status(500).send('Error querying data from Node 2');
-            });
-          }
-          
-          // Merge the results and send back to the client
-          const mergedResults = [...results1, ...results2];
-          res.json(mergedResults);
-          
-          // Commit the transaction block for Node 1
-          centralNodeConnection.commit((error) => {
-            if (error) {
-              console.error(error);
-              return centralNodeConnection.rollback(() => {
-                res.status(500).send('Error committing transaction');
-              });
-            }
-            
-            console.log('Transaction committed successfully');
-          });
-        });
-      });
-    });
-  });
-});
-
+  );
 });
 
 // Start the server

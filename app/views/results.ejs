@@ -31,8 +31,8 @@
                         <%= movie.year %>
                     </td>
                     <td>
-                        <a href="/movies/edit/<%= movie.id %>">Edit</a>
-                        <form action="/movies/delete/<%= movie.id %>" method="POST">
+                        <a href="/movies/edit/<%= movie.name %>">Edit</a>
+                        <form action="/movies/delete/<%= movie.name %>" method="POST">
                             <button type="submit">Delete</button>
                         </form>
                     </td>
