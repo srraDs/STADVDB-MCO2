@@ -29,8 +29,8 @@ const createMovie = (movie, callback) => {
 };
 
 // Read a movie
-const getMovie = (id, callback) => {
-  connection.query('SELECT * FROM movies WHERE id = ?', id, (error, result) => {
+const getMovie = (name, callback) => {
+  connection.query('SELECT * FROM movies WHERE name = ?', name, (error, result) => {
     if (error) {
       console.error('Error retrieving movie: ', error);
       callback(error, null);

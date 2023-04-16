@@ -28,16 +28,18 @@ const node3Connection = mysql.createConnection({
   password: '12345',
   database: 'node3_database',
 });
+
+
 // Route for getting all movies from the central node
 app.get('/movies', (req, res) => {
-  centralNodeConnection.query('SELECT name, year FROM movies_test_2', (error, results) => {
+  centralNodeConnection.query('SELECT name, year FROM movies_test_2 LIMIT 10', (error, results) => {
     if (error) {
       console.error(error);
       return res.status(500).send('Error retrieving movies from database');
     }
 
     res.render('results', { movies: results });
-  });
+  } );
 });
 
 
