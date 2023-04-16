@@ -55,7 +55,7 @@ app.post('/transactions/case1', (req, res) => {
     }
     
     // Query the same data item from Node 1 and Node 2
-    centralNodeConnection.query('SELECT * FROM movies WHERE year = 1970', (error, results1) => {
+    centralNodeConnection.query('SELECT * FROM movies WHERE year = 1990', (error, results1) => {
       if (error) {
         console.error(error);
         return centralNodeConnection.rollback(() => {
@@ -63,7 +63,7 @@ app.post('/transactions/case1', (req, res) => {
         });
       }
       
-      node2Connection.query('SELECT * FROM movies WHERE year = 1970', (error, results2) => {
+      node2Connection.query('SELECT * FROM movies WHERE year = 1990', (error, results2) => {
         if (error) {
           console.error(error);
           return centralNodeConnection.rollback(() => {
