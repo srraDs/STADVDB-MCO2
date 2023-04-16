@@ -56,16 +56,43 @@ app.get('/movies/add', (req, res) => {
 });
 
 // Route for adding a movie
-app.post('/movies/add', (req, res) => {
-  const { title, year } = req.body;
-  centralNodeConnection.query('INSERT INTO movies_test_2 (name, year) VALUES (?, ?)', [title, year], (error, results) => {
-    if (error) {
-      console.error(error);
-      return res.status(500).send('Error adding movie to database');
-    }
-    res.redirect('/movies');
-  });
+// GET request to display add movie form
+app.get('/movies/add', (req, res) => {
+  res.render('add');
 });
+
+// POST request to create a new movie
+app.post('/movies/add', (req, res) => {
+const movie = {
+  name: req.body.title,
+  year: req.body.year
+};
+
+centralNodeConnection.query('INSERT INTO movies_test_2 SET ?', movie, (error, result) => {
+  if (error) {
+    console.error('Error creating movie: ', error);
+    res.render('error', { message: 'Error creating movie' });
+    return;
+  }
+  console.log('Movie created with id: ', result.insertId);
+  res.redirect('/movies');
+});
+
+});
+
+// Function to create a new movie
+const createMovie = (movie, callback) => {
+  connection.query('INSERT INTO movies SET ?', movie, (error, result) => {
+    if (error) {
+      console.error('Error creating movie: ', error);
+      callback(error, null);
+      return;
+    }
+    console.log('Movie created with id: ', result.insertId);
+    callback(null, result.insertId);
+  });
+};
+
 
 // Route for displaying the edit movie form
 app.get('/movies/edit/:id', (req, res) => {
@@ -112,10 +139,26 @@ app.post('/movies/delete/:id', (req, res) => {
 // Route for searching movies by name or year
 app.post('/movies/search', (req, res) => {
   const searchQuery = req.body.search;
+  const query = `%${searchQuery}%`; // add wildcards to match partial strings
+
   // search for movies in the database that match the search query
-  // ...
-  res.render('results', { movies: movies }); // pass the movies variable to the template
+  connection.query('SELECT * FROM movies WHERE title LIKE ? OR year LIKE ?', [query, query], (error, results) => {
+    if (error) {
+      console.error('Error searching for movies: ', error);
+      res.render('results', { movies: [], errorMessage: 'Error searching for movies' });
+      return;
+    }
+
+    const movies = results.map((row) => ({
+      id: row.id,
+      title: row.title,
+      year: row.year
+    }));
+
+    res.render('results', { movies: movies });
+  });
 });
+
 
 
 // Start the server
