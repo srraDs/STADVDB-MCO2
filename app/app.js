@@ -124,18 +124,33 @@ app.post('/movies/edit/:id', (req, res) => {
 
 // Route for deleting a movie
 app.post('/movies/delete/:id', (req, res) => {
-  const { id } = req.params;
+  const id = req.params.id;
 
-  // Delete the movie with the given ID from the central node database
-  centralNodeConnection.query('DELETE FROM movies_test_2 WHERE id = ?', [id], (error, results) => {
+  // Check if the movie exists in the database
+  centralNodeConnection.query('SELECT * FROM movies_test_2 WHERE id = ?', [id], (error, results) => {
     if (error) {
       console.error(error);
-      return res.status(500).send('Error deleting movie from database');
+      return res.status(500).send('Error retrieving movie from database');
     }
 
-    res.redirect('/movies');
+    // If the movie does not exist, return an error response
+    if (results.length === 0) {
+      return res.status(404).send('Movie not found');
+    }
+
+    // Delete the movie from the database
+    centralNodeConnection.query('DELETE FROM movies_test_2 WHERE id = ?', [id], (error, results) => {
+      if (error) {
+        console.error(error);
+        return res.status(500).send('Error deleting movie from database');
+      }
+
+      // Redirect to the /movies route to display the updated movie list
+      res.redirect('/movies');
+    });
   });
 });
+
 
 
 // Route for setting isolation level
