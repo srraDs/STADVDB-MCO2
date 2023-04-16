@@ -91,6 +91,53 @@ app.post('/transactions/case1', (req, res) => {
 
 });
 
+// Route for adding a new movie
+app.post('/movies/add', (req, res) => {
+  const { name, year } = req.body;
+
+  // Insert the new movie into the central node database
+  centralNodeConnection.query('INSERT INTO movies_test_2 (name, year) VALUES (?, ?)', [name, year], (error, results) => {
+    if (error) {
+      console.error(error);
+      return res.status(500).send('Error adding movie to database');
+    }
+
+    res.redirect('/movies');
+  });
+});
+
+// Route for editing a movie
+app.post('/movies/edit/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, year } = req.body;
+
+  // Update the movie with the given ID in the central node database
+  centralNodeConnection.query('UPDATE movies_test_2 SET name = ?, year = ? WHERE id = ?', [name, year, id], (error, results) => {
+    if (error) {
+      console.error(error);
+      return res.status(500).send('Error updating movie in database');
+    }
+
+    res.redirect('/movies');
+  });
+});
+
+// Route for deleting a movie
+app.post('/movies/delete/:id', (req, res) => {
+  const { id } = req.params;
+
+  // Delete the movie with the given ID from the central node database
+  centralNodeConnection.query('DELETE FROM movies_test_2 WHERE id = ?', [id], (error, results) => {
+    if (error) {
+      console.error(error);
+      return res.status(500).send('Error deleting movie from database');
+    }
+
+    res.redirect('/movies');
+  });
+});
+
+
 // Route for setting isolation level
 app.post('/isolation-level', (req, res) => {
 app.post('/transactions/case1', (req, res) => {
