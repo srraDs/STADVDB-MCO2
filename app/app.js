@@ -90,7 +90,7 @@ app.post('/movies/edit/:id', (req, res) => {
   const id = req.params.id;
   const { title, director, year, genre_1, genre_2 } = req.body;
 
-  centralNodeConnection.query('SELECT * FROM movies_test_2 WHERE id = ?', [id], (error, results) => {
+  centralNodeConnection.query('SELECT * FROM movies_test_2 WHERE id = ? FOR UPDATE', [id], (error, results) => {
     if (error) {
       console.error(error);
       return res.status(500).send('Error retrieving movie from database');
