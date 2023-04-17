@@ -17,7 +17,7 @@ connection.connect((err) => {
 
 // Create a movie
 const createMovie = (movie, callback) => {
-  connection.query('INSERT INTO movies SET ?', movie, (error, result) => {
+  connection.query('INSERT INTO movies_test_2 SET ?', movie, (error, result) => {
     if (error) {
       console.error('Error creating movie: ', error);
       callback(error, null);
@@ -30,7 +30,7 @@ const createMovie = (movie, callback) => {
 
 // Read a movie
 const getMovie = (name, callback) => {
-  connection.query('SELECT * FROM movies WHERE name = ?', name, (error, result) => {
+  connection.query('SELECT * FROM movies_test_2 WHERE name = ?', name, (error, result) => {
     if (error) {
       console.error('Error retrieving movie: ', error);
       callback(error, null);
@@ -48,7 +48,7 @@ const getMovie = (name, callback) => {
 
 // Update a movie
 const updateMovie = (id, movie, callback) => {
-  connection.query('UPDATE movies SET ? WHERE id = ?', [movie, id], (error, result) => {
+  connection.query('UPDATE movies_test_2 SET ? WHERE id = ?', [movie, id], (error, result) => {
     if (error) {
       console.error('Error updating movie: ', error);
       callback(error, null);
@@ -61,7 +61,7 @@ const updateMovie = (id, movie, callback) => {
 
 // Delete a movie
 const deleteMovie = (id, callback) => {
-  connection.query('DELETE FROM movies WHERE id = ?', id, (error, result) => {
+  connection.query('DELETE FROM movies_test_2 WHERE id = ?', id, (error, result) => {
     if (error) {
       console.error('Error deleting movie: ', error);
       callback(error, null);
@@ -72,4 +72,22 @@ const deleteMovie = (id, callback) => {
   });
 };
 
-module.exports = { createMovie, getMovie, updateMovie, deleteMovie };
+
+// Search for a movie
+const searchMovie = (searchQuery, callback) => {
+  const query = `%${searchQuery}%`; // add wildcards to match partial strings
+
+  connection.query('SELECT * FROM movies_test_2 WHERE name LIKE ? OR year LIKE ? OR director LIKE ? OR genre_1 LIKE ? OR genre_2 LIKE ?', [query, query, query, query, query], (error, results) => {
+    if (error) {
+      console.error('Error searching for movies: ', error);
+      callback(error, null);
+      return;
+    }
+
+    console.log('Movies found: ', results);
+    callback(null, results);
+  });
+};
+
+
+module.exports = { createMovie, getMovie, updateMovie, deleteMovie, searchMovie };

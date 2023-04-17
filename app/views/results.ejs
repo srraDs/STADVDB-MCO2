@@ -17,7 +17,9 @@
         <thead>
             <tr>
                 <th>Title</th>
+                <th>Director</th>
                 <th>Year</th>
+                <th>Genres</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -25,13 +27,16 @@
             <% movies.forEach(function(movie) { %>
                 <tr>
                     <td>
-                        <%= movie.id %>
-                    </td>
-                    <td>
                         <%= movie.name %>
                     </td>
                     <td>
+                        <%= movie.director %>
+                    </td>
+                    <td>
                         <%= movie.year %>
+                    </td>
+                    <td>
+                        <%= movie.genre_1 %> <%= movie.genre_2 %>
                     </td>
                     <td>
                         <a href="/movies/edit/<%= movie.id %>">Edit</a>
@@ -40,8 +45,9 @@
                         </form>
                     </td>
                 </tr>
-                <% }); %>
+            <% }); %>
         </tbody>
+        
     </table>
 <a href="/movies/add">Add a Movie</a>
 
