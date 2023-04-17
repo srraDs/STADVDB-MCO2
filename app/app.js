@@ -46,7 +46,7 @@ app.get('/movies/add', (req, res) => {
   res.render('add');
 });
 
-// Route for adding a movie
+// Route for adding a movie from the central node
 app.post('/movies/add', (req, res) => {
   const movie = {
     id: null,
@@ -57,15 +57,96 @@ app.post('/movies/add', (req, res) => {
     genre_2: req.body.genre_2,
   };
 
-  // call createMovie instead of inserting directly
-  movies.createMovie(movie, (error, result) => {
-    if (error) {
-      console.error('Error creating movie: ', error);
-      res.render('error', { message: 'Error creating movie' });
-      return;
+  centralNodeConnection.beginTransaction((err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Error starting transaction');
     }
-    console.log('Movie created with id: ', result.insertId);
-    res.redirect('/movies');
+
+    // Lock the movies table in the central database
+    centralNodeConnection.query('LOCK TABLES movies_test_2 WRITE', (error) => {
+      if (error) {
+        console.error(error);
+        return centralNodeConnection.rollback(() => {
+          res.status(500).send('Error locking movies table');
+        });
+      }
+
+      // Get the highest ID in the central database and increment it
+      centralNodeConnection.query('SELECT MAX(id) AS max_id FROM movies_test_2', (error, results) => {
+        if (error) {
+          console.error(error);
+          return centralNodeConnection.rollback(() => {
+            res.status(500).send('Error getting highest ID');
+          });
+        }
+
+        const newId = results[0].max_id ? results[0].max_id + 1 : 1;
+        movie.id = newId;
+
+        // Insert the movie into the central database
+        centralNodeConnection.query('INSERT INTO movies_test_2 SET ?', movie, (error, results) => {
+          if (error) {
+            console.error(error);
+            return centralNodeConnection.rollback(() => {
+              res.status(500).send('Error adding movie to central database');
+            });
+          }
+
+          console.log(`Movie with id ${newId} added to central node`);
+
+          // Update node2 if the year of the movie is less than 1980
+          if (movie.year < 1980) {
+            node2Connection.query('INSERT INTO movies_test_2 SET ?', movie, (error, results) => {
+              if (error) {
+                console.error(error);
+                return centralNodeConnection.rollback(() => {
+                  res.status(500).send('Error adding movie to node2');
+                });
+              }
+
+              console.log(`Movie with id ${newId} added to node2`);
+            });
+          }
+
+          // Update node3 if the year of the movie is greater than or equal to 1980
+          if (movie.year >= 1980) {
+            node3Connection.query('INSERT INTO movies_test_2 SET ?', movie, (error, results) => {
+              if (error) {
+                console.error(error);
+                return centralNodeConnection.rollback(() => {
+                  res.status(500).send('Error adding movie to node3');
+                });
+              }
+
+              console.log(`Movie with id ${newId} added to node3`);
+            });
+          }
+
+          // Unlock the movies table in the central database
+          centralNodeConnection.query('UNLOCK TABLES', (error) => {
+            if (error) {
+              console.error(error);
+              return centralNodeConnection.rollback(() => {
+                res.status(500).send('Error unlocking movies table');
+              });
+            }
+
+            // Commit the transaction
+            centralNodeConnection.commit((err) => {
+              if (err) {
+                console.error(err);
+                return centralNodeConnection.rollback(() => {
+                  res.status(500).send('Error committing transaction');
+                });
+              }
+
+              res.redirect('/movies');
+            });
+          });
+        });
+      });
+    });
   });
 });
 
