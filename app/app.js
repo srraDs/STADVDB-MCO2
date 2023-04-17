@@ -144,15 +144,82 @@ app.post('/movies/edit/:id', (req, res) => {
 // Route for deleting a movie from the central node
 app.post('/movies/delete/:id', (req, res) => {
   const id = req.params.id;
-  centralNodeConnection.query('DELETE FROM movies_test_2 WHERE id = ?', id, (error, results) => {
-    if (error) {
-      console.error(error);
-      return res.status(500).send('Error deleting movie from database');
+  let year;
+
+  // Start a transaction
+  centralNodeConnection.beginTransaction((err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Error starting transaction');
     }
-    console.log(`Movie with id ${id} deleted from database`);
-    res.redirect('/movies');
+
+    // Lock the movie record
+    centralNodeConnection.query('SELECT * FROM movies_test_2 WHERE id = ? FOR UPDATE', id, (error, results) => {
+      if (error) {
+        console.error(error);
+        return centralNodeConnection.rollback(() => {
+          res.status(500).send('Error locking movie record');
+        });
+      }
+
+      // Check the year of the movie
+      year = results[0].year;
+
+      // Delete the movie record from the central node
+      centralNodeConnection.query('DELETE FROM movies_test_2 WHERE id = ?', id, (error, results) => {
+        if (error) {
+          console.error(error);
+          return centralNodeConnection.rollback(() => {
+            res.status(500).send('Error deleting movie from database');
+          });
+        }
+
+        console.log(`Movie with id ${id} deleted from central node`);
+
+        // Update node2 if the year of the movie is less than 1980
+        if (year < 1980) {
+          node2Connection.query('DELETE FROM movies_test_2 WHERE id = ?', id, (error, results) => {
+            if (error) {
+              console.error(error);
+              return centralNodeConnection.rollback(() => {
+                res.status(500).send('Error deleting movie from node2');
+              });
+            }
+
+            console.log(`Movie with id ${id} deleted from node2`);
+          });
+        }
+
+        // Update node3 if the year of the movie is greater than or equal to 1980
+        if (year >= 1980) {
+          node3Connection.query('DELETE FROM movies_test_2 WHERE id = ?', id, (error, results) => {
+            if (error) {
+              console.error(error);
+              return centralNodeConnection.rollback(() => {
+                res.status(500).send('Error deleting movie from node3');
+              });
+            }
+
+            console.log(`Movie with id ${id} deleted from node3`);
+          });
+        }
+
+        // Commit the transaction
+        centralNodeConnection.commit((err) => {
+          if (err) {
+            console.error(err);
+            return centralNodeConnection.rollback(() => {
+              res.status(500).send('Error committing transaction');
+            });
+          }
+
+          res.redirect('/movies');
+        });
+      });
+    });
   });
 });
+
 
 // Route for searching movies by name or year
 app.post('/movies/search', (req, res) => {
