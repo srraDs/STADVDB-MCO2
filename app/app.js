@@ -89,14 +89,57 @@ app.get('/movies/edit/:id', (req, res) => {
 app.post('/movies/edit/:id', (req, res) => {
   const id = req.params.id;
   const { title, director, year, genre_1, genre_2 } = req.body;
-  centralNodeConnection.query('UPDATE movies_test_2 SET name = ?, director = ?, year = ?, genre_1 = ?, genre_2 = ? WHERE id = ?', [title, director, year, genre_1, genre_2, id], (error, results) => {
+
+  centralNodeConnection.query('SELECT * FROM movies_test_2 WHERE id = ?', [id], (error, results) => {
     if (error) {
       console.error(error);
-      return res.status(500).send('Error updating movie in database');
+      return res.status(500).send('Error retrieving movie from database');
     }
-    res.redirect('/movies');
+    if (results.length === 0) {
+      return res.status(404).send('Movie not found');
+    }
+
+    const movie = results[0];
+    movie.name = title;
+    movie.director = director;
+    movie.year = year;
+    movie.genre_1 = genre_1;
+    movie.genre_2 = genre_2;
+
+    // send the updated movie to Node 1
+    centralNodeConnection.query('UPDATE movies_test_2 SET name = ?, director = ?, year = ?, genre_1 = ?, genre_2 = ? WHERE id = ?', [title, director, year, genre_1, genre_2, id], (error, results) => {
+      if (error) {
+        console.error(error);
+        return res.status(500).send('Error updating movie in database');
+      }
+      console.log('Movie updated in Node 1:', movie);
+    });
+
+    if (movie.year < 1980) {
+      // send the updated movie to Node 2
+      node2Connection.query('UPDATE movies_test_2 SET name = ?, director = ?, year = ?, genre_1 = ?, genre_2 = ? WHERE id = ?', [title, director, year, genre_1, genre_2, id], (error, results) => {
+        if (error) {
+          console.error(error);
+          return res.status(500).send('Error updating movie in database');
+        }
+        console.log('Movie updated in Node 2:', movie);
+        res.redirect('/movies');
+      });
+    } else {
+      // send the updated movie to Node 3
+      node3Connection.query('UPDATE movies_test_2 SET name = ?, director = ?, year = ?, genre_1 = ?, genre_2 = ? WHERE id = ?', [title, director, year, genre_1, genre_2, id], (error, results) => {
+        if (error) {
+          console.error(error);
+          return res.status(500).send('Error updating movie in database');
+        }
+        console.log('Movie updated in Node 3:', movie);
+        res.redirect('/movies');
+      });
+    }
   });
 });
+
+
 
 // Route for deleting a movie from the central node
 app.post('/movies/delete/:id', (req, res) => {
