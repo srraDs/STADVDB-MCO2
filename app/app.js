@@ -30,8 +30,52 @@ const node3Connection = mysql.createConnection({
   database: 'node3_database',
 });
 
+// Function to copy movies from the central database to node2
+function copyMoviesToNode2() {
+  centralNodeConnection.query('INSERT INTO node2_database.movies_test_2 SELECT * FROM central_node_database.movies_test_2 WHERE year < 1980 AND NOT EXISTS (SELECT 1 FROM node2_database.movies_test_2 WHERE id = central_node_database.movies_test_2.id)', (error, results) => {
+    if (error) {
+      console.error(error);
+    } else {
+      console.log(`${results.affectedRows} movies checked to node2`);
+    }
+  });
+}
+
+// Function to copy movies from the central database to node3
+function copyMoviesToNode3() {
+  centralNodeConnection.query('INSERT INTO node3_database.movies_test_2 SELECT * FROM central_node_database.movies_test_2 WHERE year >= 1980 AND NOT EXISTS (SELECT 1 FROM node3_database.movies_test_2 WHERE id = central_node_database.movies_test_2.id)', (error, results) => {
+    if (error) {
+      console.error(error);
+    } else {
+      console.log(`${results.affectedRows} movies checked to node3`);
+    }
+  });
+}
+
+function copyMoviesToCentral() {
+  node2Connection.query('INSERT INTO central_node_database.movies_test_2 SELECT * FROM node2_database.movies_test_2 WHERE NOT EXISTS (SELECT 1 FROM central_node_database.movies_test_2 WHERE id = node2_database.movies_test_2.id)', (error, results) => {
+    if (error) {
+      console.error(error);
+    } else {
+      console.log(`${results.affectedRows} movies checked from node2 to central`);
+    }
+  });
+
+  node3Connection.query('INSERT INTO central_node_database.movies_test_2 SELECT * FROM node3_database.movies_test_2 WHERE NOT EXISTS (SELECT 1 FROM central_node_database.movies_test_2 WHERE id = node3_database.movies_test_2.id)', (error, results) => {
+    if (error) {
+      console.error(error);
+    } else {
+      console.log(`${results.affectedRows} movies checked from node3 to central`);
+    }
+  });
+}
+
+
 // Route for getting all movies from the central node
 app.get('/movies', (req, res) => {
+  copyMoviesToNode2();
+  copyMoviesToNode3();
+  copyMoviesToCentral();
   centralNodeConnection.query('SELECT id, name, year, director, genre_1, genre_2 FROM movies_test_2 LIMIT 20', (error, results) => {
     if (error) {
       console.error(error);
